@@ -41,10 +41,6 @@ class Shortly(object):
 		response = self.dispatch_request(request)
 		return response(environ, start_response)
 
-	
-
-
-
 	def insert_url(self, url):
 		short_id = self.redis.get('reverse-url:' + url)
 		if short_id is not None:
@@ -54,8 +50,6 @@ class Shortly(object):
 		self.redis.set('url-target:' + short_id, url)
 		self.redis.set('reverse-url' + url, short_id)
 		return short_id
-
-
 
 	def on_follow_short_link(self, request, short_id):
 		link_target = self.redis.get('url-target:' + short_id)
@@ -117,4 +111,4 @@ def create_app(redis_host='localhost', redis_port=6379, with_static=True):
 if __name__ == '__main__':
 	from werkzeug.serving import run_simple
 	app = create_app()
-	run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
+	run_simple('127.0.0.1', 5000, app, use_debugger=False, use_reloader=True)
