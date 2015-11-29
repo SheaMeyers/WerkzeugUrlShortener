@@ -38,10 +38,9 @@ class Shortly(object):
 		response = self.dispatch_request(request)
 		return response(environ, start_response)
 
-	def __call__(self, environ, start_response):
-		return self.wsgi_app(environ, start_response)
+	
 
-	def is_valid_url(url):
+	def is_valid_url(self, url):
 		parts = urlparse.urlparse(url)
 		return parts.scheme in ('http','https')
 
@@ -50,12 +49,12 @@ class Shortly(object):
 		if short_id is not None:
 			return short_id
 		url_num = self.redis.incr('last-url-id')
-		short_id = base36_encode(url_num)
+		short_id = self.base36_encode(url_num)
 		self.redis.set('url-target:' + short_id, url)
 		self.redis.set('reverse-url' + url, short_id)
 		return short_id
 
-	def base36_encode(number):
+	def base36_encode(self, number):
 		assert number >= 0, 'positive integer required'
 		if number == 0:
 			return '0'
@@ -88,12 +87,15 @@ class Shortly(object):
 		url = ''
 		if request.method == 'POST':
 			url = request.form['url']
-			if not is_valid_url(url):
-				error = 'Please enter a valid URL'
-			else:
-				short_id = self.insert_url(url)
-				return redirect('/%s+' % short_id)
+		if not self.is_valid_url(url):
+			error = 'Please enter a valid URL'
+		else:
+			short_id = self.insert_url(url)
+			return redirect('/%s+' % short_id)
 		return self.render_template('new_url.html', error=error, url=url)
+
+	def __call__(self, environ, start_response):
+		return self.wsgi_app(environ, start_response)
 
 def create_app(redis_host='localhost', redis_port=6379, with_static=True):
     app = Shortly({
